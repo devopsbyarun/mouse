@@ -1,0 +1,33 @@
+pipeline {
+    agent any 
+    stages {
+        stage ('code checkout from git hub') {
+            steps {
+                git branch: 'master1', url: 'https://github.com/devopsbyarun/mouse.git'
+            }
+        }
+        stage ('build an image') {
+            steps {
+                sh 'docker build -t devopsbyarun/webpage .'
+            }
+        }
+        stage ('pushing docker image to docker hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'org-dc', passwordVariable: 'docpasswd', usernameVariable: 'devopsbyarun')]) {
+               sh "docker login -u devopsbyarun -p ${docpasswd}"
+               sh 'docker push devopsbyarun/webpage'
+                }
+            }
+        }
+        stage ('deploy to localhost') {
+            steps {
+                sh ''' 
+                   #!/bin/bash
+                   docker stop app-v1 || true
+                   docker rm app-v1 || true
+                   docker run --name=app-v1 -p 80:80 -itd devopsbyarun/webpage
+                 '''
+            }
+        }
+    }
+}
